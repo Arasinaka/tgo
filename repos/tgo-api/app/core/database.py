@@ -24,7 +24,7 @@ sync_engine = create_engine(
     max_overflow=settings.DATABASE_MAX_OVERFLOW,
     pool_timeout=settings.DATABASE_POOL_TIMEOUT,
     pool_recycle=settings.DATABASE_POOL_RECYCLE,
-    echo=settings.DEBUG,
+    echo=False,
 )
 
 SessionLocal = sessionmaker(
@@ -40,7 +40,7 @@ async_engine = create_async_engine(
     max_overflow=settings.DATABASE_MAX_OVERFLOW,
     pool_timeout=settings.DATABASE_POOL_TIMEOUT,
     pool_recycle=settings.DATABASE_POOL_RECYCLE,
-    echo=settings.DEBUG,
+    echo=False,
 )
 
 AsyncSessionLocal = async_sessionmaker(

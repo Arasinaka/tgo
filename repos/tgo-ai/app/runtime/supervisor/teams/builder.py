@@ -244,12 +244,28 @@ class AgnoTeamBuilder:
             members_count=len(members)
         )
 
+        team_instructions = settings.supervisor_runtime.team_instructions
+
+        ui_mode = context.ui_mode
+
+        if ui_mode == "json_render":
+            try:
+                from app.json_render import JsonRenderSchemaManager
+
+                json_render_block = JsonRenderSchemaManager().generate_system_prompt(
+                    include_schema=True, include_examples=True,
+                )
+                team_instructions = f"{team_instructions}\n\n{json_render_block}"
+                self._logger.debug("json-render schema injected into team instructions")
+            except Exception as exc:  # noqa: BLE001
+                self._logger.warning("Failed to inject json-render schema", error=str(exc))
+
         return {
             "members": members,
             "name": context.team.name or "Supervisor Coordination Team",
             "role": config.get("role", "Coordinator"),
             "description": context.team.instruction,
-            "instructions": settings.supervisor_runtime.team_instructions,
+            "instructions": team_instructions,
             "user_id": context.user_id,
             "session_id": context.session_id,
             "model": team_model,
@@ -289,9 +305,7 @@ class AgnoTeamBuilder:
             ("user_info", self._create_user_info_tool),
             ("user_sentiment", self._create_user_sentiment_tool),
             ("user_tag", self._create_user_tag_tool),
-            ("ui_templates", self._create_ui_template_tools),
         ]
-
         for tool_name, creator in tool_creators:
             try:
                 result = creator(tool_context)
@@ -348,33 +362,6 @@ class AgnoTeamBuilder:
             return None
         except Exception as exc:
             self._logger.warning("Failed to add user tag tool", error=str(exc))
-            return None
-
-    def _create_ui_template_tools(self, ctx: Dict[str, Any]) -> Optional[List[Any]]:
-        """Create UI template tools for structured data rendering."""
-        try:
-            from app.ui_templates.tools import get_ui_template, render_ui, list_ui_templates
-
-            # Use descriptive names for tool functions
-            ui_get_template = get_ui_template
-            ui_render = render_ui
-            ui_list_templates = list_ui_templates
-
-            # Assign docstrings for Agent understanding if not already present
-            if not ui_get_template.__doc__:
-                ui_get_template.__doc__ = "获取指定 UI 模板的详细 schema 格式和使用示例。"
-            if not ui_render.__doc__:
-                ui_render.__doc__ = "将业务数据渲染为前端可识别的 UI 组件代码块 (tgo-ui-widget)。"
-            if not ui_list_templates.__doc__:
-                ui_list_templates.__doc__ = "列出所有可用的 UI 模板及其简短描述。"
-
-            self._logger.debug("UI template tools created for team")
-            return [ui_get_template, ui_render, ui_list_templates]
-
-        except ImportError:
-            return None
-        except Exception as exc:
-            self._logger.warning("Failed to create UI template tools", error=str(exc))
             return None
 
     def _setup_memory(

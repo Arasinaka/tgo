@@ -55,8 +55,7 @@ from app.runtime.tools.utils import (
     wrap_mcp_authenticate_tool,
 )
 from app.services.api_service import api_service_client
-from app.ui_templates import generate_template_catalog
-from app.ui_templates.tools import get_ui_template, list_ui_templates, render_ui
+from app.json_render import JsonRenderSchemaManager
 
 _logger = get_logger(__name__)
 
@@ -516,9 +515,6 @@ UNEDITABLE_SYSTEM_PROMPT = (
 
 DEFAULT_SYSTEM_PROMPT = "You are a helpful assistant that has access to a variety of tools."
 
-# Flag to control UI template injection (can be configured per project/agent)
-UI_TEMPLATES_ENABLED = True
-
 
 class AgentBuilder:
     """Constructs Agno agents with optional RAG and MCP tooling."""
@@ -527,6 +523,13 @@ class AgentBuilder:
         self._settings = settings
         self._logger = get_logger("runtime.tools.AgentBuilder")
         self._memory_db: Optional[PostgresDb] = None
+
+    @staticmethod
+    def _is_cancellation_like_error(exc: BaseException) -> bool:
+        """Detect anyio/asyncio cancellation-style exceptions emitted by MCP clients."""
+        name = type(exc).__name__.lower()
+        message = str(exc).lower()
+        return "cancel" in name or "cancel scope" in message
 
     # ------------------------------------------------------------------
     # Public API
@@ -610,15 +613,9 @@ class AgentBuilder:
             project_id=request.project_id,
         )
 
-        # Add UI template tools if enabled
-        enable_ui_templates = getattr(config, 'enable_ui_templates', True) and UI_TEMPLATES_ENABLED
-        if enable_ui_templates:
-            tools.extend(self._build_ui_template_tools())
-
         # Build Agno Skills object if skills_enabled
         skills_obj = None
         skills_enabled = request.skills_enabled if request.skills_enabled is not None else True
-        print("skills_enabled-->", skills_enabled)
         if skills_enabled and request.project_id:
             try:
                 skills_obj = self._build_skills(request.project_id)
@@ -636,7 +633,7 @@ class AgentBuilder:
                 )
 
         model = self._initialize_model(config)
-        instructions = self._compose_system_prompt(config.system_prompt, enable_ui_templates)
+        instructions = self._compose_system_prompt(config.system_prompt)
         enable_memory = request.enable_memory or bool(config.enable_memory)
 
         self._logger.debug(
@@ -710,30 +707,30 @@ class AgentBuilder:
     def _compose_system_prompt(
         self,
         configured_prompt: Optional[str],
-        enable_ui_templates: bool = True,
     ) -> str:
-        """Compose the final system prompt with optional UI template catalog.
+        """Compose the final system prompt with json-render schema.
 
         Args:
             configured_prompt: The base system prompt from configuration.
-            enable_ui_templates: Whether to inject UI template catalog.
 
         Returns:
             Composed system prompt string.
         """
         prompt = configured_prompt or DEFAULT_SYSTEM_PROMPT
 
-        # Inject UI template catalog if enabled
-        if enable_ui_templates and UI_TEMPLATES_ENABLED:
-            try:
-                ui_catalog = generate_template_catalog()
-                if ui_catalog:
-                    prompt = f"{prompt}\n\n{ui_catalog}"
-            except Exception as exc:  # noqa: BLE001
-                self._logger.warning(
-                    "Failed to inject UI template catalog",
-                    error=str(exc),
-                )
+        try:
+            json_render_mgr = JsonRenderSchemaManager()
+            json_render_block = json_render_mgr.generate_system_prompt(
+                include_schema=True,
+                include_examples=True,
+            )
+            prompt = f"{prompt}\n\n{json_render_block}"
+            self._logger.debug("json-render schema injected into system prompt")
+        except Exception as exc:  # noqa: BLE001
+            self._logger.warning(
+                "Failed to inject json-render schema into system prompt",
+                error=str(exc),
+            )
 
         return f"{prompt}{UNEDITABLE_SYSTEM_PROMPT}"
 
@@ -826,51 +823,6 @@ class AgentBuilder:
                 )
 
         return tools
-
-    def _build_ui_template_tools(self) -> List[Any]:
-        """Build UI template tools for structured data rendering.
-
-        Returns:
-            List of UI template tool functions.
-        """
-        try:
-            # Create function tools for the UI template operations
-            tools = []
-
-            # We use simple function wrappers that can be called by the LLM
-            def ui_get_template(template_name: str) -> str:
-                """获取指定 UI 模板的详细格式说明。当需要展示订单、产品、物流等结构化数据时使用。
-
-                Args:
-                    template_name: 模板名称 (order/product/product_list/logistics/price_comparison)
-                """
-                return get_ui_template(template_name)
-
-            def ui_render(template_name: str, data: dict) -> str:
-                """渲染 UI 模板，验证数据格式并返回格式化的 Markdown。
-
-                Args:
-                    template_name: 模板名称
-                    data: 要渲染的数据字典
-                """
-                return render_ui(template_name, data)
-
-            def ui_list_templates() -> str:
-                """列出所有可用的 UI 模板及其简短描述。"""
-                return list_ui_templates()
-
-            tools.extend([ui_get_template, ui_render, ui_list_templates])
-
-            self._logger.debug("UI template tools added", tool_count=len(tools))
-            return tools
-
-        except Exception as exc:  # noqa: BLE001
-            self._logger.warning(
-                "Failed to build UI template tools",
-                error=str(exc),
-                error_type=type(exc).__name__,
-            )
-            return []
 
     def _build_skills(self, project_id: str) -> Optional[Any]:
         """Build an Agno Skills object that loads project + official skills.
@@ -1076,6 +1028,14 @@ class AgentBuilder:
                 mcp_url=server_url,
                 error=str(exc),
             ) from exc
+        except BaseException as exc:  # cancellation-like errors may inherit BaseException
+            if self._is_cancellation_like_error(exc):
+                raise MCPConnectionError(
+                    "MCP setup canceled while initializing tools",
+                    mcp_url=server_url,
+                    error=str(exc),
+                ) from exc
+            raise
 
         self._logger.debug(
             "MCP tools setup completed",
@@ -1369,18 +1329,24 @@ class AgentBuilder:
                     instances.append(mcp)
             except Exception as exc:
                 self._logger.warning(f"Failed to setup MCP server {endpoint}", error=str(exc))
+            except BaseException as exc:
+                if self._is_cancellation_like_error(exc):
+                    self._logger.warning(
+                        "MCP server setup canceled, skipping endpoint",
+                        endpoint=endpoint,
+                        error=str(exc),
+                        error_type=type(exc).__name__,
+                    )
+                    continue
+                raise
         return instances, stdio_cmds
 
     async def _build_device_mcp_tools(self, internal_agent: "InternalAgent") -> List[Any]:
-        """Create MCPTools connection for the agent's bound device.
+        """Create callable MCP function tools for the agent's bound device.
 
-        Reads ``bound_device_id`` from the internal agent and resolves the
-        device-control MCP endpoint template to establish a Streamable HTTP
-        connection.
-
-        Returns:
-            List containing a single connected MCPTools instance, or empty if
-            no device is bound.
+        Unlike generic MCP toolkit wiring, this resolves device MCP tools at
+        build time and returns function tools directly. This avoids runtime
+        toolkit initialization failures from aborting the whole team stream.
         """
         device_id = internal_agent.bound_device_id
         if not device_id:
@@ -1393,9 +1359,79 @@ class AgentBuilder:
             endpoint=endpoint,
         )
 
-        mcp = MCPTools(transport="streamable-http", url=endpoint)
-        await mcp.connect()
-        return [mcp]
+        requested_tool_names = {
+            t.tool_name
+            for t in (internal_agent.tools or [])
+            if getattr(t, "enabled", True)
+            and t.tool_type == "MCP"
+            and t.tool_name
+        }
+        added_tool_names: set[str] = set()
+        device_tools: List[Any] = []
+
+        try:
+            async with streamablehttp_client(endpoint) as streams:
+                read_stream, write_stream, _ = streams
+                async with ClientSession(read_stream, write_stream) as session:
+                    await session.initialize()
+
+                    cursor = None
+                    while True:
+                        tool_list_page = await session.list_tools(cursor=cursor)
+                        if not tool_list_page or not tool_list_page.tools:
+                            break
+
+                        for mcp_tool in tool_list_page.tools:
+                            if requested_tool_names and mcp_tool.name not in requested_tool_names:
+                                continue
+                            if mcp_tool.name in added_tool_names:
+                                continue
+
+                            try:
+                                device_tools.append(
+                                    create_agno_mcp_tool(
+                                        mcp_tool,
+                                        mcp_server_url=endpoint,
+                                        headers=None,
+                                    )
+                                )
+                                added_tool_names.add(mcp_tool.name)
+                            except Exception as exc:  # noqa: BLE001
+                                self._logger.warning(
+                                    "Failed to convert device MCP tool, skipping",
+                                    device_id=str(device_id),
+                                    endpoint=endpoint,
+                                    tool_name=mcp_tool.name,
+                                    error=str(exc),
+                                    error_type=type(exc).__name__,
+                                )
+
+                        cursor = tool_list_page.nextCursor
+                        if not cursor:
+                            break
+        except Exception as exc:  # noqa: BLE001
+            raise MCPConnectionError(
+                "Device MCP setup failed during tool discovery",
+                mcp_url=endpoint,
+                error=str(exc),
+            ) from exc
+        except BaseException as exc:
+            if self._is_cancellation_like_error(exc):
+                raise MCPConnectionError(
+                    "Device MCP setup canceled during tool discovery",
+                    mcp_url=endpoint,
+                    error=str(exc),
+                ) from exc
+            raise
+
+        self._logger.debug(
+            "Device MCP tools setup completed",
+            device_id=str(device_id),
+            endpoint=endpoint,
+            tools_fetched=len(device_tools),
+            tools_requested=len(requested_tool_names) if requested_tool_names else "all",
+        )
+        return device_tools
 
     async def _build_multi_mcp_stdio(self, stdio_cmds: List[str]) -> List[Any]:
         """Helper to construct MultiMCPTools for stdio servers."""
@@ -1406,6 +1442,15 @@ class AgentBuilder:
         except Exception as exc:
             self._logger.error("MultiMCPTools initialization failed", error=str(exc))
             return []
+        except BaseException as exc:
+            if self._is_cancellation_like_error(exc):
+                self._logger.warning(
+                    "MultiMCPTools setup canceled, skipping stdio MCP tools",
+                    error=str(exc),
+                    error_type=type(exc).__name__,
+                )
+                return []
+            raise
 
     def get_memory_backend(self, model: Any) -> tuple[MemoryManager, PostgresDb]:
         """Expose shared memory backend for external consumers (keyed by model)."""

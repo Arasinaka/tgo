@@ -399,13 +399,16 @@ dev-web: check-env
 	@echo "$(CYAN)Starting tgo-web on port $(WEB_PORT)...$(RESET)"
 	@cd $(WEB_DIR) && \
 		VITE_API_BASE_URL=http://localhost:$(API_PORT) \
+		VITE_WIDGET_PREVIEW_URL==http://localhost:5174 \
+		VITE_WIDGET_SCRIPT_BASE=http://localhost:5174/tgo-widget-sdk.js \
+		VITE_WIDGET_DEMO_URL=http://localhost:5174/demo.html \
 		VITE_DEBUG_MODE=true \
 		npm run dev -- --port $(WEB_PORT)
 
 dev-widget: check-env
 	@echo "$(CYAN)Starting tgo-widget-app on port $(WIDGET_PORT)...$(RESET)"
 	@cd $(WIDGET_DIR) && \
-		VITE_API_BASE=http://localhost:$(API_PORT) \
+		VITE_API_BASE_URL=http://localhost:$(API_PORT) \
 		npm run dev -- --port $(WIDGET_PORT)
 
 # ==========================================================

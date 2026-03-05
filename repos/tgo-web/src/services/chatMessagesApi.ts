@@ -29,12 +29,31 @@ export interface StaffTeamChatResponse {
   client_msg_no: string; // Message correlation ID for tracking
 }
 
+// Request type for UI user action
+export interface UIUserActionRequest {
+  channel_id: string;
+  channel_type: number;
+  action_name: string;
+  context: Record<string, unknown>;
+  surface_id?: string | null;
+  team_id?: string | null;
+  agent_id?: string | null;
+}
+
+// Response type for UI user action
+export interface UIUserActionResponse {
+  success: boolean;
+  message: string;
+  client_msg_no: string;
+}
+
 class ChatMessagesApiService extends BaseApiService {
   protected readonly apiVersion = 'v1';
   protected readonly endpoints = {
     sendPlatformMessage: '/v1/chat/messages/send',
     teamChat: '/v1/chat/team',
     clearMemory: '/v1/chat/memory',
+    uiAction: '/v1/chat/ui/action',
   } as const;
 
   /**
@@ -60,6 +79,15 @@ class ChatMessagesApiService extends BaseApiService {
   }
 
   /**
+   * Send a UI user action (button click, form submit) back to the AI agent.
+   */
+  async sendUIAction(
+    data: UIUserActionRequest
+  ): Promise<UIUserActionResponse> {
+    return this.post<UIUserActionResponse>(this.endpoints.uiAction, data);
+  }
+
+  /**
    * Clear AI conversational memory for a specific channel.
    */
   async clearChatMemory(params: {
@@ -76,4 +104,3 @@ class ChatMessagesApiService extends BaseApiService {
 
 export const chatMessagesApiService = new ChatMessagesApiService();
 export default chatMessagesApiService;
-

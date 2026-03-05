@@ -91,6 +91,7 @@ export type ConnectionStatusHandler = (status: ConnectionStatus) => void;
 export type ErrorHandler = (error: any) => void;
 export type StreamMessageHandler = (clientMsgNo: string, content: string) => void;
 export type StreamEndHandler = (clientMsgNo: string, error?: string) => void;
+export type JSONRenderMessageHandler = (clientMsgNo: string, payload: { patches: Record<string, unknown>[] }) => void;
 export type VisitorPresenceEvent = { visitorId?: string; channelId: string; channelType: number; isOnline: boolean; timestamp?: string | null; eventType: string; raw?: any };
 export type VisitorPresenceHandler = (presence: VisitorPresenceEvent) => void;
 
@@ -120,6 +121,7 @@ export class WuKongIMWebSocketService {
 
   private streamMessageHandlers: StreamMessageHandler[] = [];
   private streamEndHandlers: StreamEndHandler[] = [];
+  private jsonRenderMessageHandlers: JSONRenderMessageHandler[] = [];
   private visitorPresenceHandlers: VisitorPresenceHandler[] = [];
 
   // Reconnection timer (for cleanup)
@@ -671,6 +673,14 @@ export class WuKongIMWebSocketService {
           }
           console.log('🔌 Queue updated event received:', payload);
           this.notifyQueueUpdatedHandlers({ raw: payload });
+        } else if (event.type === '___JSONRenderMessage') {
+          // json-render patch message from the AI agent
+          try {
+            const jsonRenderPayload = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+            this.notifyJSONRenderMessageHandlers(event.id, jsonRenderPayload);
+          } catch (e) {
+            console.warn('🔌 Failed to parse json-render message data:', e);
+          }
         } else if (event.type === WS_EVENT_TYPE.TEXT_MESSAGE_END) {
           // AI streaming content ended
           // If event.data has a value, it's treated as an error message
@@ -869,6 +879,19 @@ export class WuKongIMWebSocketService {
   }
 
   /**
+   * Notify all json-render message handlers.
+   */
+  private notifyJSONRenderMessageHandlers(clientMsgNo: string, payload: { patches: Record<string, unknown>[] }): void {
+    this.jsonRenderMessageHandlers.forEach(handler => {
+      try {
+        handler(clientMsgNo, payload);
+      } catch (err) {
+        console.error('json-render message handler error:', err);
+      }
+    });
+  }
+
+  /**
    * Notify all visitor profile updated handlers
    */
   private notifyVisitorProfileUpdatedHandlers(event: VisitorProfileUpdatedEvent): void {
@@ -987,6 +1010,17 @@ export class WuKongIMWebSocketService {
         this.streamEndHandlers.splice(index, 1);
         console.log('🔌 Stream end handler unregistered, remaining:', this.streamEndHandlers.length);
       }
+    };
+  }
+
+  /**
+   * Subscribe to json-render patch message events.
+   */
+  onJSONRenderMessage(handler: JSONRenderMessageHandler): () => void {
+    this.jsonRenderMessageHandlers.push(handler);
+    return () => {
+      const index = this.jsonRenderMessageHandlers.indexOf(handler);
+      if (index > -1) this.jsonRenderMessageHandlers.splice(index, 1);
     };
   }
 

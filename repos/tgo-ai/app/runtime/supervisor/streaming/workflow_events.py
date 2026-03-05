@@ -2,7 +2,7 @@
 Workflow event generation for streaming coordination progress.
 """
 
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from app.models.streaming import (
@@ -27,6 +27,7 @@ from app.models.streaming import (
     TeamMemberEventData,
     TeamMemberContentData,
     TeamMemberToolCallData,
+    JsonRenderUpdateData,
 )
 from app.streaming.event_emitter import StreamingEventEmitter
 from ..models.coordination import CoordinationRequest, QueryAnalysisResult
@@ -850,6 +851,34 @@ class WorkflowEventEmitter:
             EventType.TEAM_MEMBER_TOOL_CALL_COMPLETED,
             data,
             severity,
+            metadata,
+        )
+
+
+    # ----------------------------------------------------------- json-render
+    def emit_json_render_update(
+        self,
+        *,
+        patches: list[Dict[str, Any]],
+        text_content: Optional[str] = None,
+        team_id: Optional[str] = None,
+        member_id: Optional[str] = None,
+    ) -> None:
+        """Emit a json-render update event carrying SpecStream patch lines."""
+        data = JsonRenderUpdateData(
+            patches=patches,
+            text_content=text_content,
+        )
+        metadata: Dict[str, Any] = {"phase": "json_render"}
+        if team_id:
+            metadata["team_id"] = team_id
+        if member_id:
+            metadata["member_id"] = member_id
+
+        self.emitter.emit(
+            EventType.JSON_RENDER_UPDATE,
+            data,
+            EventSeverity.INFO,
             metadata,
         )
 

@@ -830,6 +830,7 @@ export enum MessagePayloadType {
   FILE = 3,
   RICH_TEXT = 12,
   STREAM = 100,  // 流消息类型（AI 流式输出开始）
+  JSON_RENDER = 200, // json-render 富交互消息
   // 系统消息类型范围：1000-2000
   SYSTEM_MIN = 1000,
   SYSTEM_STAFF_ASSIGNED = 1000,  // 已分配到客服
@@ -912,7 +913,13 @@ export interface PayloadRichText {
   };
 }
 
-export type MessagePayload = PayloadText | PayloadImage | PayloadFile | PayloadRichText | PayloadSystem;
+export interface PayloadJSONRender {
+  type: MessagePayloadType.JSON_RENDER;
+  content?: string;
+  parts: Array<{ type: string; data?: unknown; text?: string }>;
+}
+
+export type MessagePayload = PayloadText | PayloadImage | PayloadFile | PayloadRichText | PayloadSystem | PayloadJSONRender;
 
 
 export interface Message {
@@ -1487,6 +1494,3 @@ export interface UnifiedSearchResponse {
   visitor_pagination: SearchPagination | null;
   message_pagination: SearchPagination | null;
 }
-
-// UI Widget types
-export * from './ui-widget';

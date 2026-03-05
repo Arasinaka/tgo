@@ -72,11 +72,14 @@ class EventType(str, Enum):
     TEAM_MEMBER_TOOL_CALL_STARTED = "team_member_tool_call_started"
     TEAM_MEMBER_TOOL_CALL_COMPLETED = "team_member_tool_call_completed"
 
-    # UI Block events (for rich UI rendering)
-    UI_BLOCK_STARTED = "ui_block_started"  # Start of a tgo-ui-widget block
-    UI_BLOCK_CONTENT = "ui_block_content"  # Partial content of UI block (streaming)
-    UI_BLOCK_COMPLETED = "ui_block_completed"  # UI block fully received and parsed
-    UI_BLOCK_ERROR = "ui_block_error"  # UI block parsing/validation error
+    # Deprecated legacy UI block events (no longer emitted in json-render mode)
+    UI_BLOCK_STARTED = "ui_block_started"
+    UI_BLOCK_CONTENT = "ui_block_content"
+    UI_BLOCK_COMPLETED = "ui_block_completed"
+    UI_BLOCK_ERROR = "ui_block_error"
+
+    # json-render events (SpecStream protocol)
+    JSON_RENDER_UPDATE = "json_render_update"
 
 
 class EventSeverity(str, Enum):
@@ -360,6 +363,18 @@ class UIBlockErrorData(BaseEventData):
     )
 
 
+class JsonRenderUpdateData(BaseEventData):
+    """Data for json-render SpecStream patch updates."""
+
+    patches: List[Dict[str, Any]] = Field(
+        ..., description="Array of RFC 6902 JSON Patch lines for json-render SpecStream"
+    )
+    text_content: Optional[str] = Field(
+        default=None,
+        description="Optional conversational text that preceded the json-render delimiter",
+    )
+
+
 class StreamingEvent(BaseModel):
     """A single streaming event in the coordination workflow."""
     
@@ -393,6 +408,7 @@ class StreamingEvent(BaseModel):
         UIBlockContentData,
         UIBlockCompletedData,
         UIBlockErrorData,
+        JsonRenderUpdateData,
         BaseEventData
     ] = Field(..., description="Event-specific data")
     

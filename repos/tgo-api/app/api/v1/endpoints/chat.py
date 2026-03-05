@@ -38,6 +38,8 @@ from app.models import (
 )
 from app.schemas import ChatFileUploadResponse, StaffSendPlatformMessageRequest
 from app.schemas.chat import (
+    UIUserActionRequest,
+    UIUserActionResponse,
     ChatCompletionRequest,
     StaffTeamChatRequest,
     StaffTeamChatResponse,
@@ -445,12 +447,9 @@ async def chat_completion(req: ChatCompletionRequest, db: Session = Depends(get_
     # Prepare agent_ids from platform
     platform_agent_ids = [str(aid) for aid in platform.agent_ids] if platform.agent_ids else None
 
-    # 8) If wukongim_only=True, start background processing and wait for team_run_started
+    # 8) If wukongim_only=True, start background processing and return immediately.
+    # Do not block on stream start signal; otherwise requests may hang until timeout.
     if req.wukongim_only:
-        # Create an event to signal when AI processing has started
-        started_event = asyncio.Event()
-        
-        # Start background task with the event
         asyncio.create_task(chat_service.run_background_ai_interaction(
             project_id=str(project.id),
             user_id=str(visitor.id),
@@ -464,29 +463,12 @@ async def chat_completion(req: ChatCompletionRequest, db: Session = Depends(get_
             system_message=req.system_message,
             expected_output=req.expected_output,
             agent_ids=platform_agent_ids,
-            started_event=started_event,
         ))
-        
-        # Wait for team_run_started event (with timeout)
-        try:
-            await asyncio.wait_for(started_event.wait(), timeout=req.timeout_seconds or 30)
-        except asyncio.TimeoutError:
-            error_data = {
-                "success": False,
-                "event_type": "error",
-                "message": "AI processing start timeout",
-                "visitor_id": str(visitor.id),
-            }
-            if req.stream is False:
-                return error_data
-            async def timeout_gen():
-                yield chat_service.sse_format({"event_type": "error", "data": error_data})
-            return StreamingResponse(timeout_gen(), media_type="text/event-stream")
-        
+
         accepted_data = {
             "success": True,
             "event_type": "accepted",
-            "message": "Request accepted, AI processing started",
+            "message": "Request accepted, AI processing queued in background",
             "visitor_id": str(visitor.id),
         }
         if req.stream is False:
@@ -1248,6 +1230,56 @@ async def staff_team_chat(
     return StaffTeamChatResponse(
         success=True,
         message="Request accepted, processing in background",
+        client_msg_no=client_msg_no,
+    )
+
+
+@router.post(
+    "/ui/action",
+    response_model=UIUserActionResponse,
+    summary="Handle UI user interaction",
+    tags=["Chat", "UI"],
+    description="Receives a userAction from the json-render UI renderer and routes it back to the AI agent as a contextual query.",
+)
+async def handle_ui_user_action(
+    req: UIUserActionRequest,
+    current_user: Staff = Depends(require_permission("chat:send")),
+) -> UIUserActionResponse:
+    """Convert a UI user action into an AI query and process it in the background."""
+    project = current_user.project
+    if not project or not project.api_key:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Staff is not linked to a valid project",
+        )
+
+    user_action_payload = {"actionName": req.action_name, "context": req.context}
+    query = chat_service.convert_ui_user_action_to_query(user_action_payload)
+
+    client_msg_no = f"ui_action_{uuid4().hex}"
+    staff_uid = f"{current_user.id}-staff"
+    session_id = get_session_id(staff_uid, req.channel_id, req.channel_type)
+
+    target_team_id = str(req.team_id) if req.team_id else (str(project.default_team_id) if project.default_team_id else None)
+    target_agent_id = str(req.agent_id) if req.agent_id else None
+    ai_sender_uid = req.channel_id
+
+    asyncio.create_task(chat_service.run_background_ai_interaction(
+        project_id=str(current_user.project_id),
+        user_id=staff_uid,
+        message=query,
+        channel_id=staff_uid,
+        channel_type=req.channel_type,
+        client_msg_no=client_msg_no,
+        from_uid=ai_sender_uid,
+        session_id=session_id,
+        team_id=target_team_id,
+        agent_id=target_agent_id,
+    ))
+
+    return UIUserActionResponse(
+        success=True,
+        message="UI action accepted, processing in background",
         client_msg_no=client_msg_no,
     )
 

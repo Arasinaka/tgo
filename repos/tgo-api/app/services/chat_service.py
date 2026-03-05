@@ -175,15 +175,22 @@ async def forward_ai_event_to_wukongim(
                     chunk_text = inner_data.get("content") or inner_data.get("text")
             
             if chunk_text is not None:
+                chunk_str = str(chunk_text)
+                # Safety: if spec fence leaked into text path, drop fence and everything after.
+                _spec_fence_open = "```spec"
+                if _spec_fence_open in chunk_str:
+                    chunk_str = chunk_str.split(_spec_fence_open, 1)[0]
+                if not chunk_str:
+                    return None
                 await wukongim_client.send_event(
                     channel_id=channel_id,
                     channel_type=channel_type,
                     event_type="___TextMessageContent",
-                    data=str(chunk_text),
+                    data=chunk_str,
                     client_msg_no=client_msg_no,
                     from_uid=from_uid,
                 )
-                return str(chunk_text)
+                return chunk_str
         elif event_type in {"team_run_completed"}:
             await wukongim_client.send_event(
                 channel_id=channel_id,
@@ -200,6 +207,20 @@ async def forward_ai_event_to_wukongim(
                 channel_type=channel_type,
                 event_type="___TextMessageEnd",
                 data=str(error_message),
+                client_msg_no=client_msg_no,
+                from_uid=from_uid,
+            )
+        elif event_type == "json_render_update":
+            import json as _json
+            json_render_payload = _json.dumps({
+                "patches": data.get("patches", []),
+                "text_content": data.get("text_content"),
+            }, ensure_ascii=False)
+            await wukongim_client.send_event(
+                channel_id=channel_id,
+                channel_type=channel_type,
+                event_type="___JSONRenderMessage",
+                data=json_render_payload,
                 client_msg_no=client_msg_no,
                 from_uid=from_uid,
             )
@@ -375,6 +396,27 @@ async def run_background_ai_interaction(
             event_type = event_payload.get("event_type")
             if event_type == "team_run_started":
                 started_event.set()
+
+
+# ============================================================================
+# UI User Action Handling
+# ============================================================================
+
+def convert_ui_user_action_to_query(user_action: Dict[str, Any]) -> str:
+    """Convert a UI userAction payload into a natural-language query.
+
+    The frontend sends ``{ "actionName": "...", "context": {...} }``
+    when the user interacts with an interactive UI component.
+    We translate this into a human-readable message so the LLM Agent
+    can respond naturally (like the restaurant_finder sample does).
+    """
+    action_name = user_action.get("actionName", "unknown_action")
+    context = user_action.get("context", {})
+
+    context_parts = [f"{k}={v}" for k, v in context.items() if v]
+    context_str = ", ".join(context_parts) if context_parts else "no additional context"
+
+    return f"[UI Action] User triggered action '{action_name}' with context: {context_str}"
 
 
 # ============================================================================
@@ -576,4 +618,3 @@ async def get_or_create_visitor(
             db.commit()
     
     return visitor, changed
-

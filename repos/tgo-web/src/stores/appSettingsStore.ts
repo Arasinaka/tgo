@@ -8,12 +8,9 @@ interface AppSettingsState {
   defaultLlmModel: DefaultModelValue;
   defaultEmbeddingModel: DefaultModelValue;
   themeMode: ThemeMode;
-  /** 开发模式 - 启用后可在聊天界面调试 UI Widget */
-  devMode: boolean;
   setDefaultLlmModel: (value: DefaultModelValue) => void;
   setDefaultEmbeddingModel: (value: DefaultModelValue) => void;
   setThemeMode: (mode: ThemeMode) => void;
-  setDevMode: (enabled: boolean) => void;
 }
 
 export const useAppSettingsStore = create<AppSettingsState>()(
@@ -23,11 +20,9 @@ export const useAppSettingsStore = create<AppSettingsState>()(
         defaultLlmModel: null,
         defaultEmbeddingModel: null,
         themeMode: 'system',
-        devMode: false,
         setDefaultLlmModel: (value) => set({ defaultLlmModel: value }, false, 'setDefaultLlmModel'),
         setDefaultEmbeddingModel: (value) => set({ defaultEmbeddingModel: value }, false, 'setDefaultEmbeddingModel'),
         setThemeMode: (mode) => set({ themeMode: mode }, false, 'setThemeMode'),
-        setDevMode: (enabled) => set({ devMode: enabled }, false, 'setDevMode'),
       }),
       {
         name: 'app-settings',
@@ -35,11 +30,9 @@ export const useAppSettingsStore = create<AppSettingsState>()(
           defaultLlmModel: state.defaultLlmModel,
           defaultEmbeddingModel: state.defaultEmbeddingModel,
           themeMode: state.themeMode,
-          devMode: state.devMode,
         }),
       }
     ),
     { name: 'app-settings-store' }
   )
 );
-

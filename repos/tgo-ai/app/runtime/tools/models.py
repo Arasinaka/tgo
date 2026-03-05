@@ -80,6 +80,11 @@ class AgentConfig(BaseModel):
     tool_call_limit: Optional[int] = Field(default=None, description="单次运行工具调用次数限制")
     num_history_runs: Optional[int] = Field(default=None, description="历史会话轮数限制")
 
+    ui_mode: Optional[str] = Field(
+        default=None,
+        description="UI rendering mode: 'json_render' (json-render SpecStream protocol)",
+    )
+
     provider_credentials: Optional[LLMProviderCredentials] = Field(
         default=None,
         description="Resolved LLM provider credentials for this agent",

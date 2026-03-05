@@ -1,14 +1,13 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Settings, Sun, Moon, Monitor, Code2 } from 'lucide-react';
+import { Settings, Sun, Moon, Monitor } from 'lucide-react';
 
 import LanguageSelector from '@/components/ui/LanguageSelector';
 import { useAppSettingsStore, ThemeMode } from '@/stores/appSettingsStore';
 
 const GeneralSettings: React.FC = () => {
   const { t } = useTranslation();
-  const { themeMode, setThemeMode, devMode, setDevMode } = useAppSettingsStore();
-  const canShowDevMode = import.meta.env.DEV;
+  const { themeMode, setThemeMode } = useAppSettingsStore();
 
   const themeOptions: Array<{ value: ThemeMode; label: string; icon: React.ReactNode }> = [
     { value: 'light', label: t('settings.theme.light', '浅色'), icon: <Sun className="w-4 h-4" /> },
@@ -63,52 +62,6 @@ const GeneralSettings: React.FC = () => {
             <div className="text-xs text-gray-500 dark:text-gray-400">{t('settings.language.persistence', '语言偏好将自动保存到本地')}</div>
           </div>
         </div>
-
-        {/* 开发模式（仅开发/调试构建显示，生产构建隐藏） */}
-        {canShowDevMode && (
-        <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-50 dark:bg-purple-900/30 rounded-lg">
-                <Code2 className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-              </div>
-              <div>
-                <div className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                  {t('settings.devMode.title', '开发模式')}
-                </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">
-                  {t('settings.devMode.description', '启用后可在聊天界面测试 UI Widget 组件')}
-                </div>
-              </div>
-            </div>
-            <button
-              onClick={() => setDevMode(!devMode)}
-              className={`
-                relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent
-                transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2
-                ${devMode ? 'bg-purple-600' : 'bg-gray-200 dark:bg-gray-600'}
-              `}
-              role="switch"
-              aria-checked={devMode}
-            >
-              <span
-                className={`
-                  pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0
-                  transition duration-200 ease-in-out
-                  ${devMode ? 'translate-x-5' : 'translate-x-0'}
-                `}
-              />
-            </button>
-          </div>
-          {devMode && (
-            <div className="mt-3 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
-              <p className="text-xs text-purple-700 dark:text-purple-300">
-                💡 {t('settings.devMode.hint', '开发模式已启用，在聊天界面底部会显示调试工具栏，可快速发送各类 UI Widget 测试消息。')}
-              </p>
-            </div>
-          )}
-        </div>
-        )}
       </div>
     </div>
   );

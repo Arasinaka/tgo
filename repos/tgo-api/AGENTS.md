@@ -1,81 +1,111 @@
-# TGO-Tech API Service - AI Agents Guide
+# TGO API AGENTS Guide
 
-本文件旨在为 AI 代理（如 Cursor, GitHub Copilot, Claude 等）提供项目上下文、开发规范和架构指南。
+> 适用范围：`repos/tgo-api`  
+> 最近校准：2026-03-05（按当前代码与配置扫描）
 
-## 1. 项目概述
+## 1. 服务定位
 
-TGO-Tech API Service 是 TGO 客服平台的核心业务逻辑微服务。
+`tgo-api` 是核心业务网关，负责多租户业务实体与对外 API。
 
-- **多租户架构**: 通过项目 (Project) 实现数据的逻辑隔离。
-- **双服务架构**:
-  - **Main API (Port 8000)**: 面向客户端/管理后台，需要 JWT 或 API Key 认证。入口：`app/main.py`
-  - **Internal API (Port 8001)**: 面向内部微服务通信，无需认证（应仅暴露在内部网络）。入口：`app/internal.py`
-- **主要实体**: 项目 (Project)、平台 (Platform)、员工/AI代理 (Staff)、访客 (Visitor)、会话 (Session)、消息 (Chat)。
+- Main API：`app/main.py`，默认 `8000`，需要认证（JWT/API Key）
+- Internal API：`app/internal.py`，默认 `8001`，无认证，仅允许内网访问
 
-## 2. 技术栈
+---
 
-- **语言**: Python 3.11+
-- **框架**: FastAPI
-- **数据库**: PostgreSQL (SQLAlchemy 2.0 + Alembic)
-- **缓存/Session**: Redis
-- **依赖管理**: Poetry
-- **IM 引擎**: WuKongIM
-
-## 3. 项目结构
+## 2. 关键目录
 
 ```text
 app/
-├── api/
-│   ├── v1/             # 公开 API 接口
-│   │   └── endpoints/  # 具体业务端点 (staff, visitor, chat, ai_*, etc.)
-│   └── internal/       # 内部微服务接口
-├── core/               # 核心配置 (config, security, database, logging)
-├── models/             # SQLAlchemy 数据模型 (表名前缀: api_)
-├── schemas/            # Pydantic 数据验证模型
-├── services/           # 业务逻辑服务层 (核心逻辑在此)
-├── tasks/              # 定时任务或后台任务 (apscheduler/asyncio)
-├── utils/              # 通用工具函数
-├── main.py             # Main API 入口
-└── internal.py         # Internal API 入口
+├── api/v1/endpoints/        # 对外接口
+├── api/internal/endpoints/  # 内部接口（no auth）
+├── services/                # 业务逻辑与跨服务客户端
+├── schemas/                 # Pydantic 请求/响应模型
+├── models/                  # SQLAlchemy 模型（api_*）
+├── tasks/                   # 后台定时/轮询任务
+├── core/                    # config、db、security、logging、exceptions
+├── main.py                  # Main API
+└── internal.py              # Internal API
 ```
 
-## 4. 开发规范
+---
 
-### 4.1 代码风格
-- **格式化**: 使用 `black` (88 字符行宽) 和 `isort`。
-- **类型检查**: 严格执行 `mypy` 类型注解，尽可能避免 `Any`。
-- **异步**: 优先使用 `async/await`。数据库操作使用异步 session (`AsyncSession`)，但在迁移或某些特定任务中可能使用同步。
+## 3. 强约束规范
 
-### 4.2 数据库规范
-- **表名**: 所有项目相关的表名必须以 `api_` 开头（例如 `api_projects`, `api_staff`）。
-- **字段**: 使用小写下划线命名（snake_case）。
-- **迁移**: 任何模型更改需要生成 Alembic 脚本。
+### 3.1 类型与分层
 
-### 4.3 常量与枚举
-- **禁止硬编码**: 严禁在业务代码中硬编码重复使用的字符串、整数或类型 ID。
-- **统一管理**: 所有共享的常量、枚举（如消息类型、频道类型等）必须定义在 `app/utils/const.py` 中。
+- 禁止在核心业务接口使用 `Any`。
+- 禁止以裸 `dict` 作为稳定业务对象在 service 层传递。
+- Endpoint 仅做参数校验与编排，业务逻辑放 `app/services/*`。
+- 请求/响应模型必须定义在 `app/schemas/*`。
 
-### 4.4 认证与授权
-- **JWT**: 用于员工 (Staff) 登录后的操作。
+### 3.2 常量与错误处理
 
+- 公共常量与枚举放 `app/utils/const.py`，禁止重复硬编码。
+- 业务错误统一使用 `app.core.exceptions.TGOAPIException` 体系。
+- 禁止 `print`，使用项目日志组件。
 
-## 5. 常用开发命令
+### 3.3 微服务边界
 
+- 访问 AI/RAG/Workflow/Plugin/Device 等外部服务时，优先复用 `app/services/*_client.py`。
+- 禁止跨服务直连数据库或复制他服务私有逻辑。
+- Internal API 必须维持“仅内网可见”假设，不添加公网暴露路径。
 
+### 3.4 数据库迁移
 
-## 6. 核心业务逻辑参考
-
-- **消息流转**: `app/services/chat_service.py` 负责核心消息处理逻辑。
-- **访客分配**: `app/services/visitor_service.py` 和 `app/tasks/process_waiting_queue.py`。
-- **AI 集成**: `app/services/ai_client.py` 封装了与外部 AI 服务的通信。
-- **多平台同步**: `app/services/platform_sync.py` 负责各社交平台消息同步。
-
-## 7. 给 AI 代理的建议
-
-1. **查阅现有 Service**: 在实现新接口前，先检查 `app/services/` 下是否有现成的业务逻辑。
-2. **遵循依赖注入**: 在 API Endpoint 中，始终使用 `Depends(get_db)` 获取数据库会话。
-3. **错误处理**: 使用 `app.core.exceptions.TGOAPIException` 及其子类抛出业务错误。
-4. **日志**: 使用 `logging` 记录关键路径，避免使用 `print`。
+- `models` 变更必须附带 Alembic 脚本（`alembic/versions`）。
+- 迁移与业务代码必须同提交，避免 schema/code 不一致。
 
 ---
-*Created on 2026-01-11*
+
+## 4. 高频改动入口
+
+- 聊天链路：`app/services/chat_service.py`
+- 访客分配：`app/services/visitor_service.py`、`app/tasks/process_waiting_queue.py`
+- 外部 AI 调用：`app/services/ai_client.py`
+- 平台同步：`app/services/platform_sync.py`
+- 设备控制接入：`app/services/device_control_client.py`
+
+---
+
+## 5. 本地开发命令
+
+```bash
+# 依赖
+poetry install
+
+# 迁移
+poetry run alembic upgrade head
+
+# 启动 main API
+poetry run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+# 启动 internal API（单独终端）
+poetry run uvicorn app.internal:internal_app --host 127.0.0.1 --port 8001 --reload
+
+# 质量检查
+poetry run pytest
+poetry run flake8 app tests
+poetry run mypy app
+poetry run black app tests
+poetry run isort app tests
+```
+
+---
+
+## 6. AI 代理改动流程
+
+1. 先定位所属域（endpoint/schema/service/model/task）。
+2. 优先复用已有 service/client，不新增平行实现。
+3. 接口字段改动时，同步更新 schema、service、调用方。
+4. 涉及数据结构改动时，补 Alembic 迁移。
+5. 提交前至少完成 `pytest` + `flake8` + `mypy`（或解释未执行原因）。
+
+---
+
+## 7. 变更自检清单
+
+- 是否误把内部接口暴露到公网路由？
+- 是否引入跨服务硬编码 URL/字段？
+- 是否遗漏 schema 与 response model 的同步更新？
+- 是否遗漏迁移脚本？
+- 是否影响 `tgo-web` 消息结构但未同步联调？

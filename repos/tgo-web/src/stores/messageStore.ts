@@ -82,6 +82,7 @@ interface MessageState {
   cancelStreamingMessage: (clientMsgNo?: string) => Promise<void>;
   setStreamingState: (inProgress: boolean, clientMsgNo: string | null) => void;
   registerStreamingChannel: (clientMsgNo: string, channelId: string, channelType: number) => void;
+  attachJSONRenderPatches: (clientMsgNo: string, patches: Record<string, unknown>[]) => void;
 
   // Actions - 目标消息
   setTargetMessageLocation: (loc: { channelId: string; channelType: number; messageSeq: number } | null) => void;
@@ -676,6 +677,43 @@ export const useMessageStore = create<MessageState>()(
           }),
           false,
           'registerStreamingChannel'
+        );
+      },
+
+      attachJSONRenderPatches: (clientMsgNo: string, patches: Record<string, unknown>[]) => {
+        const state = get();
+        const messageIndex = state.messages.findIndex((msg) => msg.clientMsgNo === clientMsgNo);
+        if (messageIndex === -1) return;
+
+        set(
+          (s) => ({
+            messages: s.messages.map((msg) => {
+              if (msg.clientMsgNo !== clientMsgNo) return msg;
+              const currentMeta = msg.metadata ?? {};
+              const existingParts = Array.isArray(currentMeta.ui_parts) ? currentMeta.ui_parts as Array<Record<string, unknown>> : [];
+              const nextParts = patches.length > 0
+                ? [
+                    ...existingParts,
+                    ...patches.map((patch) => ({
+                      type: 'data-spec',
+                      data: {
+                        type: 'patch',
+                        patch,
+                      },
+                    })),
+                  ]
+                : existingParts;
+              return {
+                ...msg,
+                metadata: {
+                  ...currentMeta,
+                  ui_parts: nextParts,
+                },
+              };
+            }),
+          }),
+          false,
+          'attachJSONRenderPatches'
         );
       },
 

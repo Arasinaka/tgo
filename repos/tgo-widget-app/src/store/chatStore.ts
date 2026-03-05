@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import IMService from '../services/wukongim'
-import type { ChatMessage, MessagePayload } from '../types/chat'
+import type { ChatMessage, MessagePayload, JSONRenderPatchPart } from '../types/chat'
 import { isSystemMessageType } from '../types/chat'
 import { loadCachedVisitor, registerVisitor, saveCachedVisitor } from '../services/visitor'
 import { resolveApiKey } from '../utils/url'
@@ -22,7 +22,7 @@ let offCustom: null | (()=>void) = null
 
 
 // Streaming control timer (auto-revert if no end event)
-let streamTimer: any = null
+let streamTimer: ReturnType<typeof setTimeout> | null = null
 const STREAM_TIMEOUT_MS = 60000
 
 export type ChatConfig = {
@@ -50,6 +50,7 @@ export type ChatState = {
   // actions
   initIM: (cfg: ChatConfig) => Promise<void>
   sendMessage: (text: string) => Promise<void>
+  sendUIAction: (actionName: string, context: Record<string, unknown>) => Promise<void>
   // uploads
   uploadFiles: (files: FileList | File[]) => Promise<void>
   retryUpload: (messageId: string) => Promise<void>
@@ -68,6 +69,7 @@ export type ChatState = {
   markStreamingEnd: (clientMsgNo?: string) => void
   cancelStreaming: (reason?: string) => Promise<void>
   appendStreamData: (clientMsgNo: string, data: string) => void
+  attachJSONRenderPatches: (clientMsgNo: string, patches: Record<string, unknown>[]) => void
   finalizeStreamMessage: (clientMsgNo: string, errorMessage?: string) => void
   ensureWelcomeMessage: (text: string) => void
   // unread count
@@ -117,6 +119,23 @@ function toPayloadFromAny(raw: any): MessagePayload {
 const pendingFiles = new Map<string, File>()
 const uploadControllers = new Map<string, AbortController>()
 
+function normalizeJSONRenderPatches(raw: unknown): Record<string, unknown>[] {
+  if (!Array.isArray(raw)) return []
+  return raw.filter((item): item is Record<string, unknown> => {
+    return Boolean(item && typeof item === 'object' && !Array.isArray(item))
+  })
+}
+
+function toJSONRenderParts(patches: Record<string, unknown>[]): JSONRenderPatchPart[] {
+  return patches.map((patch) => ({
+    type: 'data-spec',
+    data: {
+      type: 'patch',
+      patch,
+    },
+  }))
+}
+
 function mapHistoryToChatMessage(m: WuKongIMMessage, myUid?: string): ChatMessage {
   const isStreamEnded = m?.setting_flags?.stream === true && m?.end === 1 && typeof m?.stream_data === 'string' && m.stream_data.length > 0
   const payload: MessagePayload = isStreamEnded ? { type: 1, content: m.stream_data as string } : toPayloadFromAny(m?.payload)
@@ -134,6 +153,10 @@ function mapHistoryToChatMessage(m: WuKongIMMessage, myUid?: string): ChatMessag
     channelType: typeof m.channel_type === 'number' ? m.channel_type : undefined,
     errorMessage,
   }
+}
+
+function buildUIActionQuery(actionName: string, context: Record<string, unknown>): string {
+  return `[UI Action] User triggered action '${actionName}' with context: ${JSON.stringify(context ?? {})}`
 }
 
 const inflightStaff = new Set<string>()
@@ -291,13 +314,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
       })
       // custom stream events (de-duped)
       if (offCustom) { try { offCustom() } catch {} ; offCustom = null }
-      offCustom = IMService.onCustom((ev:any) => {
+      offCustom = IMService.onCustom((ev: unknown) => {
         try {
           if (!ev) return
+          const customEvent = ev as { type?: string; id?: unknown; data?: unknown }
 
           // Handle stream start event
-          if (ev.type === '___TextMessageStart') {
-            const id = ev?.id ? String(ev.id) : ''
+          if (customEvent.type === '___TextMessageStart') {
+            const id = customEvent?.id ? String(customEvent.id) : ''
             if (!id) return
             console.log('[Chat] Stream started for message:', id)
 
@@ -317,21 +341,40 @@ export const useChatStore = create<ChatState>((set, get) => ({
           }
 
           // Handle streaming content chunks
-          if (ev.type === '___TextMessageContent') {
-            const id = ev?.id ? String(ev.id) : ''
+          if (customEvent.type === '___TextMessageContent') {
+            const id = customEvent?.id ? String(customEvent.id) : ''
             if (!id) return
-            const chunk = typeof ev.data === 'string' ? ev.data : (ev.data!=null ? String(ev.data) : '')
+            const chunk = typeof customEvent.data === 'string' ? customEvent.data : (customEvent.data!=null ? String(customEvent.data) : '')
             if (!chunk) return
             get().appendStreamData(id, chunk)
             return
           }
 
+          // Handle json-render patch event
+          if (customEvent.type === '___JSONRenderMessage') {
+            const id = customEvent?.id ? String(customEvent.id) : ''
+            if (!id) return
+            const parsedData = (() => {
+              if (typeof customEvent.data === 'string') {
+                try { return JSON.parse(customEvent.data) as Record<string, unknown> } catch { return null }
+              }
+              if (customEvent.data && typeof customEvent.data === 'object' && !Array.isArray(customEvent.data)) {
+                return customEvent.data as Record<string, unknown>
+              }
+              return null
+            })()
+            const patches = normalizeJSONRenderPatches(parsedData?.patches)
+            if (patches.length === 0) return
+            get().attachJSONRenderPatches(id, patches)
+            return
+          }
+
           // Handle stream end event
-          if (ev.type === '___TextMessageEnd') {
-            const id = ev?.id ? String(ev.id) : ''
+          if (customEvent.type === '___TextMessageEnd') {
+            const id = customEvent?.id ? String(customEvent.id) : ''
             if (!id) return
             // 如果 data 字段有值，则认为是错误信息
-            const errorMessage = ev?.data ? String(ev.data) : undefined
+            const errorMessage = customEvent?.data ? String(customEvent.data) : undefined
             console.log('[Chat] Stream ended for message:', id, errorMessage ? `error: ${errorMessage}` : '')
             get().finalizeStreamMessage(id, errorMessage)
             try { get().markStreamingEnd() } catch {}
@@ -455,6 +498,59 @@ export const useChatStore = create<ChatState>((set, get) => ({
         messages: state.messages.map(m => m.id === id ? { ...m, status: undefined, reasonCode: ReasonCode.Unknown } : m),
         error: (e as any)?.message || String(e)
       }))
+    }
+  },
+
+  sendUIAction: async (actionName: string, context: Record<string, unknown>) => {
+    const action = (actionName || '').trim()
+    if (!action) return
+
+    try {
+      const st = get()
+      const apiBase = st.apiBase
+      const platformApiKey = resolveApiKey() || ''
+      const myUid = st.myUid
+      const channelId = st.channelId
+      const channelType = st.channelType
+
+      if (!apiBase || !platformApiKey || !myUid) {
+        throw new Error('Cannot send UI action: missing apiBase, apiKey, or myUid')
+      }
+
+      // If a previous stream is ongoing, auto-cancel it before sending a new UI action.
+      if (st.isStreaming) { try { await get().cancelStreaming('auto_cancel_on_ui_action') } catch {} }
+
+      const query = buildUIActionQuery(action, context)
+      const url = `${apiBase.replace(/\/$/, '')}/v1/chat/completion`
+      const payload: Record<string, unknown> = {
+        api_key: platformApiKey,
+        message: query,
+        from_uid: myUid,
+        wukongim_only: true,
+        forward_user_message_to_wukongim: false,
+        stream: false,
+      }
+      if (channelId) payload.channel_id = channelId
+      if (channelType != null) payload.channel_type = channelType
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      const resJson = await res.json().catch(() => ({}))
+      if ((resJson as Record<string, unknown>).event_type === 'error') {
+        const errMsg = String((resJson as Record<string, unknown>).message || (resJson as Record<string, unknown>).detail || 'Unknown error')
+        throw new Error(errMsg)
+      }
+      if (!res.ok) {
+        const errMsg = String((resJson as Record<string, unknown>).message || (resJson as Record<string, unknown>).detail || `${res.status} ${res.statusText}`)
+        throw new Error(`/v1/chat/completion failed: ${errMsg}`)
+      }
+    } catch (e) {
+      console.error('[Chat] Send UI action failed:', e)
+      set({ error: (e as Error)?.message || String(e) })
     }
   },
 
@@ -787,6 +883,35 @@ export const useChatStore = create<ChatState>((set, get) => ({
     if (!st.isStreaming) { try { get().markStreamingStart(clientMsgNo) } catch {} }
   },
 
+  attachJSONRenderPatches: (clientMsgNo: string, patches: Record<string, unknown>[]) => {
+    if (!clientMsgNo || patches.length === 0) return
+    const nextParts = toJSONRenderParts(patches)
+    set((state) => {
+      let found = false
+      const messages = state.messages.map((m) => {
+        if (m.clientMsgNo && m.clientMsgNo === clientMsgNo) {
+          found = true
+          return {
+            ...m,
+            uiParts: [...(m.uiParts ?? []), ...nextParts],
+          }
+        }
+        return m
+      })
+      if (found) return { messages }
+
+      const placeholder: ChatMessage = {
+        id: `json-${clientMsgNo}`,
+        role: 'agent',
+        payload: { type: 1, content: '' },
+        time: new Date(),
+        clientMsgNo,
+        uiParts: nextParts,
+      }
+      return { messages: [...state.messages, placeholder] }
+    })
+  },
+
   finalizeStreamMessage: (clientMsgNo: string, errorMessage?: string) => {
     if (!clientMsgNo) return
     set(state => {
@@ -847,4 +972,3 @@ export const useChatStore = create<ChatState>((set, get) => ({
 }))
 
 export default useChatStore
-

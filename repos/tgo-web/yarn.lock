@@ -457,6 +457,20 @@
     "@jridgewell/resolve-uri" "^3.1.0"
     "@jridgewell/sourcemap-codec" "^1.4.14"
 
+"@json-render/core@0.11.0", "@json-render/core@^0.11.0":
+  version "0.11.0"
+  resolved "https://registry.yarnpkg.com/@json-render/core/-/core-0.11.0.tgz#90796ac14fa605b5f60a3825add69eace16f5cf0"
+  integrity sha512-gktZDcWsQjE5Nmet0zxwl51QXgDF2s3oVOI42Hho3Q2OWPpODlsas6p0ePi1SzIlaQLONvqDLa4PHPt/DWOh/Q==
+  dependencies:
+    zod "^4.3.6"
+
+"@json-render/react@^0.11.0":
+  version "0.11.0"
+  resolved "https://registry.yarnpkg.com/@json-render/react/-/react-0.11.0.tgz#ca132b067c8242066089593fd9d4c810f01a182a"
+  integrity sha512-PEKXBuOmHF+n+uFoYiwwDA1jUuFZNI43NpTtrDiVGtqKE7JLOZeLNibIsts52Zqd1FyHQk967qBI4MXklBMFMA==
+  dependencies:
+    "@json-render/core" "0.11.0"
+
 "@napi-rs/wasm-runtime@^0.2.11":
   version "0.2.12"
   resolved "https://registry.yarnpkg.com/@napi-rs/wasm-runtime/-/wasm-runtime-0.2.12.tgz#3e78a8b96e6c33a6c517e1894efbd5385a7cb6f2"
@@ -3319,6 +3333,11 @@ yocto-queue@^0.1.0:
   version "0.1.0"
   resolved "https://registry.npmjs.org/yocto-queue/-/yocto-queue-0.1.0.tgz"
   integrity sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==
+
+zod@^4.3.6:
+  version "4.3.6"
+  resolved "https://registry.yarnpkg.com/zod/-/zod-4.3.6.tgz#89c56e0aa7d2b05107d894412227087885ab112a"
+  integrity sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg==
 
 zustand@^4.4.1:
   version "4.5.7"

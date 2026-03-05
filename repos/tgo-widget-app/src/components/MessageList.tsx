@@ -8,6 +8,7 @@ import { AlertCircle, RotateCw, Trash2 } from 'lucide-react'
 import { ReasonCode } from 'easyjssdk'
 import { Bubble, Cursor, AILoadingDots, TextMessage, ImageMessage, FileMessage, MixedMessage, MixedImages, SystemMessage } from './messages'
 import { useTranslation } from 'react-i18next'
+import JSONRenderMessage from './messages/JSONRenderMessage'
 
 
 
@@ -140,10 +141,15 @@ export default function MessageList({ messages }: { messages: ChatMessage[] }){
   const remove = useChatStore(s => s.removeMessage)
   const staffCache = useChatStore(s => s.staffInfoCache)
   const sendMessage = useChatStore(s => s.sendMessage)
+  const sendUIAction = useChatStore(s => s.sendUIAction)
 
   const handleSendMessage = (msg: string) => {
     void sendMessage(msg)
   }
+
+  const handleJSONRenderAction = useCallback((actionName: string, context: Record<string, unknown>) => {
+    void sendUIAction(actionName, context)
+  }, [sendUIAction])
 
 
   return (
@@ -173,6 +179,7 @@ export default function MessageList({ messages }: { messages: ChatMessage[] }){
           
           // After filtering out system messages, we can safely cast to RegularMessagePayload
           const payload = m.payload as RegularMessagePayload
+          const hasJSONRender = Array.isArray(m.uiParts) && m.uiParts.length > 0
           
           return (
           <li key={m.key}>
@@ -193,6 +200,15 @@ export default function MessageList({ messages }: { messages: ChatMessage[] }){
                     <FileMessage url={payload.file.url} name={payload.file.name} size={payload.file.size} />
                   )}
                 </div>
+              ) : hasJSONRender ? (
+                <Bubble self={m.role === 'user'}>
+                  <JSONRenderMessage
+                    message={m}
+                    onSendMessage={handleSendMessage}
+                    onAction={handleJSONRenderAction}
+                    showCursor={Boolean(m.streamData && m.streamData.length)}
+                  />
+                </Bubble>
               ) : payload.type === 2 ? (
                 <ImageMessage url={payload.url} w={payload.width} h={payload.height} />
               ) : m.errorMessage ? (
@@ -266,4 +282,3 @@ export default function MessageList({ messages }: { messages: ChatMessage[] }){
     </Main>
   )
 }
-

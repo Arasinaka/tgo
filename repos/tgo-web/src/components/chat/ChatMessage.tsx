@@ -2,8 +2,7 @@ import React from 'react';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-import type { Message, PayloadSystem } from '@/types';
-import { MessagePayloadType, PlatformType, isSystemMessageType } from '@/types';
+import { MessagePayloadType, PlatformType, isSystemMessageType, type Message, type PayloadSystem } from '@/types';
 import { useAuthStore } from '@/stores/authStore';
 import { StreamEndReason } from '@/stores/chatStore';
 import { useChannelDisplay } from '@/hooks/useChannelDisplay';
@@ -17,6 +16,7 @@ import TextMessage from './messages/TextMessage';
 import ImageMessage from './messages/ImageMessage';
 import FileMessage from './messages/FileMessage';
 import RichTextMessage from './messages/RichTextMessage';
+import JSONRenderMessage from './messages/JSONRenderMessage';
 import LoadingMessage from './messages/LoadingMessage';
 import AIErrorMessage from './messages/AIErrorMessage';
 import SystemMessage from './messages/SystemMessage';
@@ -40,10 +40,12 @@ const MessageContent: React.FC<{
   isRichText: boolean;
   isImage: boolean;
   isFile: boolean;
+  isJSONRender: boolean;
   onSendMessage?: (message: string) => void;
-}> = ({ message, isStaff, streamError, streamErrorText, isStreamLoading, isRichText, isImage, isFile, onSendMessage }) => {
+}> = ({ message, isStaff, streamError, streamErrorText, isStreamLoading, isRichText, isImage, isFile, isJSONRender, onSendMessage }) => {
   if (streamError) return <AIErrorMessage isStaff={isStaff} errorText={streamErrorText} />;
   if (isStreamLoading) return <LoadingMessage isStaff={isStaff} />;
+  if (isJSONRender) return <JSONRenderMessage message={message} isStaff={isStaff} onSendMessage={onSendMessage} />;
   if (isRichText) return <RichTextMessage message={message} isStaff={isStaff} onSendMessage={onSendMessage} />;
   if (isImage) return <ImageMessage message={message} isStaff={isStaff} />;
   if (isFile) return <FileMessage message={message} isStaff={isStaff} />;
@@ -126,6 +128,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSuggestionClick, o
   const isRichText = typedPayload?.type === MessagePayloadType.RICH_TEXT || message.payloadType === MessagePayloadType.RICH_TEXT || Array.isArray(meta.images);
   const isImage = typedPayload?.type === MessagePayloadType.IMAGE || message.payloadType === MessagePayloadType.IMAGE || Boolean(meta.image_url || meta.image_preview_url);
   const isFile = typedPayload?.type === MessagePayloadType.FILE || message.payloadType === MessagePayloadType.FILE || Boolean(meta.file_url || meta.file_name);
+  const isJSONRender = Boolean(meta.ui_parts && Array.isArray(meta.ui_parts) && meta.ui_parts.length > 0);
   const isStreamType = typedPayload?.type === MessagePayloadType.STREAM || message.payloadType === MessagePayloadType.STREAM;
 
   // Stream loading: only show loading if stream type AND no content AND not ended (end !== 1)
@@ -219,6 +222,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSuggestionClick, o
             isRichText={isRichText}
             isImage={isImage}
             isFile={isFile}
+            isJSONRender={isJSONRender}
             onSendMessage={onSendMessage}
           />
         </div>
@@ -241,6 +245,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSuggestionClick, o
           isRichText={isRichText}
           isImage={isImage}
           isFile={isFile}
+          isJSONRender={isJSONRender}
           onSendMessage={onSendMessage}
         />
         {isSending && (

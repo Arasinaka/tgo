@@ -220,6 +220,7 @@ class CoordinationContext(BaseModel):
     rag_url: Optional[str] = Field(None, description="URL of the RAG server for retrieval-augmented generation")
     rag_api_key: Optional[str] = Field(None, description="API key for the RAG server")
     enable_memory: bool = Field(False, description="Enable conversational memory for downstream agents")
+    ui_mode: str = Field("json_render", description="UI rendering mode: 'json_render'")
 
     class Config:
         """Pydantic model configuration."""

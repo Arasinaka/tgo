@@ -154,6 +154,28 @@ class StaffTeamChatResponse(BaseSchema):
     client_msg_no: str = Field(..., description="Message correlation ID for tracking")
 
 
+# UI User Action schema
+
+class UIUserActionRequest(BaseSchema):
+    """Request payload when a user interacts with a rendered UI component."""
+
+    channel_id: str = Field(..., description="WuKongIM channel ID (e.g. '{team_id}-team' or '{visitor_id}-vtr')")
+    channel_type: int = Field(..., description="WuKongIM channel type")
+    action_name: str = Field(..., description="UI action name (e.g. 'book_restaurant', 'submit_feedback')")
+    context: Dict[str, Any] = Field(default_factory=dict, description="Action context key-value pairs from data bindings")
+    surface_id: Optional[str] = Field(None, description="Optional UI surface identifier")
+    team_id: Optional[UUID] = Field(None, description="AI Team ID for routing")
+    agent_id: Optional[UUID] = Field(None, description="AI Agent ID for routing")
+
+
+class UIUserActionResponse(BaseSchema):
+    """Response for UI user action submission."""
+
+    success: bool = Field(..., description="Whether the action was accepted")
+    message: str = Field(..., description="Status message")
+    client_msg_no: str = Field(..., description="Correlation ID for tracking the response")
+
+
 # OpenAI-compatible Chat Completion schemas
 
 class OpenAIChatMessage(BaseSchema):

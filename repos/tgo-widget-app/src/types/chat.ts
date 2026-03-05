@@ -45,7 +45,7 @@ export type MixedMessagePayload = {
 export type CommandMessagePayload = {
   type: 99
   cmd: string
-  param: Record<string, any>
+  param: Record<string, unknown>
 }
 
 // AI Loading indicator (shown while AI is thinking/preparing response)
@@ -57,7 +57,15 @@ export type AILoadingMessagePayload = {
 export type SystemMessageExtra = {
   uid?: string
   name?: string
-  [key: string]: any
+  [key: string]: unknown
+}
+
+export type JSONRenderPatchPart = {
+  type: 'data-spec'
+  data: {
+    type: 'patch'
+    patch: Record<string, unknown>
+  }
 }
 
 export type SystemMessagePayload = {
@@ -101,6 +109,8 @@ export type ChatMessage = {
   channelType?: number
   // Incremental streaming data (if present, prefer displaying this)
   streamData?: string
+  // json-render incremental data parts (SpecStream patches)
+  uiParts?: JSONRenderPatchPart[]
   // Transient state while uploading/sending
   status?: MessageStatus
   // Upload progress & error (for attachments)
