@@ -59,37 +59,45 @@ def upgrade() -> None:
 
     seed_rows = [
         # OpenAI
-        ("openai", "gpt-4o-mini", "gpt-4o-mini", "chat", 10),
-        ("openai", "gpt-4.1-mini", "gpt-4.1-mini", "chat", 20),
-        ("openai", "text-embedding-3-small", "text-embedding-3-small", "embedding", 30),
+        ("openai", "gpt-4.1-mini", "GPT-4.1 Mini", "chat", 10),
+        ("openai", "gpt-4.1-nano", "GPT-4.1 Nano", "chat", 20),
+        ("openai", "o4-mini", "o4-mini", "chat", 30),
+        ("openai", "gpt-5", "GPT-5", "chat", 40),
+        ("openai", "gpt-5.4", "GPT-5.4", "chat", 50),
+        ("openai", "text-embedding-3-small", "text-embedding-3-small", "embedding", 60),
+        ("openai", "text-embedding-3-large", "text-embedding-3-large", "embedding", 70),
         # Azure OpenAI
-        ("azure_openai", "gpt-4o-mini", "gpt-4o-mini", "chat", 10),
-        ("azure_openai", "gpt-4.1-mini", "gpt-4.1-mini", "chat", 20),
-        ("azure_openai", "text-embedding-3-small", "text-embedding-3-small", "embedding", 30),
+        ("azure_openai", "gpt-4.1-mini", "GPT-4.1 Mini", "chat", 10),
+        ("azure_openai", "gpt-4.1-nano", "GPT-4.1 Nano", "chat", 20),
+        ("azure_openai", "o4-mini", "o4-mini", "chat", 30),
+        ("azure_openai", "text-embedding-3-small", "text-embedding-3-small", "embedding", 40),
+        ("azure_openai", "text-embedding-3-large", "text-embedding-3-large", "embedding", 50),
         # DashScope (Qwen)
-        ("dashscope", "qwen3-plus", "qwen3-plus", "chat", 10),
-        ("dashscope", "qwen3-max", "qwen3-max", "chat", 20),
+        ("dashscope", "qwen3.5-plus", "Qwen3.5-Plus", "chat", 10),
+        ("dashscope", "qwen3.5-max", "Qwen3.5-Max", "chat", 20),
         ("dashscope", "text-embedding-v4", "text-embedding-v4", "embedding", 30),
         # Anthropic
-        ("anthropic", "claude-3-5-sonnet-latest", "claude-3-5-sonnet-latest", "chat", 10),
-        ("anthropic", "claude-3-7-sonnet-latest", "claude-3-7-sonnet-latest", "chat", 20),
-        # Moonshot
-        ("moonshot", "moonshot-v1-8k", "moonshot-v1-8k", "chat", 10),
-        ("moonshot", "moonshot-v1-32k", "moonshot-v1-32k", "chat", 20),
+        ("anthropic", "claude-sonnet-4-6", "Claude Sonnet 4.6", "chat", 10),
+        ("anthropic", "claude-haiku-4-5-20251001", "Claude Haiku 4.5", "chat", 20),
+        ("anthropic", "claude-opus-4-6", "Claude Opus 4.6", "chat", 30),
+        # Moonshot (Kimi)
+        ("moonshot", "kimi-k2.5", "Kimi K2.5", "chat", 10),
+        ("moonshot", "kimi-k2", "Kimi K2", "chat", 20),
         # DeepSeek
-        ("deepseek", "deepseek-chat", "deepseek-chat", "chat", 10),
-        ("deepseek", "deepseek-reasoner", "deepseek-reasoner", "chat", 20),
+        ("deepseek", "deepseek-chat", "DeepSeek-V3.1", "chat", 10),
+        ("deepseek", "deepseek-reasoner", "DeepSeek-R1", "chat", 20),
         # Baichuan
         ("baichuan", "Baichuan4-Turbo", "Baichuan4-Turbo", "chat", 10),
         ("baichuan", "Baichuan-Text-Embedding", "Baichuan-Text-Embedding", "embedding", 20),
         # Ollama
-        ("ollama", "llama3.1", "llama3.1", "chat", 10),
-        ("ollama", "qwen2.5", "qwen2.5", "chat", 20),
+        ("ollama", "llama3.3", "Llama 3.3", "chat", 10),
+        ("ollama", "qwen3.5", "Qwen 3.5", "chat", 20),
         ("ollama", "nomic-embed-text", "nomic-embed-text", "embedding", 30),
         # OpenAI-compatible fallback (custom provider kind)
-        ("openai_compatible", "gpt-4o-mini", "gpt-4o-mini", "chat", 10),
-        ("openai_compatible", "gpt-4.1-mini", "gpt-4.1-mini", "chat", 20),
-        ("openai_compatible", "text-embedding-3-small", "text-embedding-3-small", "embedding", 30),
+        ("openai_compatible", "gpt-4.1-mini", "GPT-4.1 Mini", "chat", 10),
+        ("openai_compatible", "gpt-4.1-nano", "GPT-4.1 Nano", "chat", 20),
+        ("openai_compatible", "o4-mini", "o4-mini", "chat", 30),
+        ("openai_compatible", "text-embedding-3-small", "text-embedding-3-small", "embedding", 40),
     ]
 
     op.bulk_insert(
