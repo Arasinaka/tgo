@@ -95,6 +95,8 @@ REF=latest curl -fsSL https://raw.githubusercontent.com/tgoai/tgo/main/bootstrap
 | 仓库 | 说明 | 技术栈 |
 |:---|:---|:---|
 | [tgo-widget-js](repos/tgo-widget-js) | 可嵌入网站的客服聊天组件（Intercom 风格） | TypeScript / React 18 |
+| [tgo-widget-ios](repos/tgo-widget-ios) | 原生 iOS 客服聊天 SDK，SwiftUI 视图 + UIKit 桥接 | Swift / SwiftUI |
+| [tgo-widget-flutter](repos/tgo-widget-flutter) | 跨平台客服聊天组件，支持 iOS 和 Android | Dart / Flutter |
 | [tgo-widget-cli](repos/tgo-widget-cli) | 面向访客的 CLI 工具 & MCP Server，提供客服交互界面 | TypeScript / Node.js |
 | [tgo-widget-miniprogram](repos/tgo-widget-miniprogram) | 微信小程序聊天组件，支持 AI 流式响应和 Markdown 渲染 | TypeScript |
 

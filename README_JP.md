@@ -90,6 +90,8 @@ REF=latest curl -fsSL https://raw.githubusercontent.com/tgoai/tgo/main/bootstrap
 | リポジトリ | 説明 | 技術スタック |
 |:---|:---|:---|
 | [tgo-widget-js](repos/tgo-widget-js) | ウェブサイトに埋め込み可能なカスタマーサービスチャットウィジェット（Intercomスタイル） | TypeScript / React 18 |
+| [tgo-widget-ios](repos/tgo-widget-ios) | ネイティブiOSカスタマーサービスチャットSDK、SwiftUIビュー + UIKitブリッジ | Swift / SwiftUI |
+| [tgo-widget-flutter](repos/tgo-widget-flutter) | iOS・Android対応クロスプラットフォームカスタマーサービスチャットウィジェット | Dart / Flutter |
 | [tgo-widget-cli](repos/tgo-widget-cli) | 訪問者向けCLIツール & MCPサーバー。カスタマーサービスインターフェースを提供 | TypeScript / Node.js |
 | [tgo-widget-miniprogram](repos/tgo-widget-miniprogram) | WeChatミニプログラムチャットコンポーネント。AIストリーミング応答とMarkdownレンダリングに対応 | TypeScript |
 

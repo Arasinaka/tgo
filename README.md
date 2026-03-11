@@ -95,6 +95,8 @@ For more details, please visit the [Documentation](https://tgo.ai).
 | Repository | Description | Tech Stack |
 |:---|:---|:---|
 | [tgo-widget-js](repos/tgo-widget-js) | Embeddable customer service chat widget (Intercom-style) for websites | TypeScript / React 18 |
+| [tgo-widget-ios](repos/tgo-widget-ios) | Native iOS customer service chat SDK with SwiftUI views and UIKit bridging | Swift / SwiftUI |
+| [tgo-widget-flutter](repos/tgo-widget-flutter) | Cross-platform customer service chat widget for iOS and Android | Dart / Flutter |
 | [tgo-widget-cli](repos/tgo-widget-cli) | Visitor-facing CLI tool & MCP Server providing customer service interface | TypeScript / Node.js |
 | [tgo-widget-miniprogram](repos/tgo-widget-miniprogram) | WeChat Mini Program chat widget component with AI streaming responses and Markdown rendering | TypeScript |
 

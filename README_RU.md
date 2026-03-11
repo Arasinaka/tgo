@@ -90,6 +90,8 @@ REF=latest curl -fsSL https://raw.githubusercontent.com/tgoai/tgo/main/bootstrap
 | Репозиторий | Описание | Технологии |
 |:---|:---|:---|
 | [tgo-widget-js](repos/tgo-widget-js) | Встраиваемый чат-виджет поддержки клиентов для веб-сайтов (в стиле Intercom) | TypeScript / React 18 |
+| [tgo-widget-ios](repos/tgo-widget-ios) | Нативный iOS SDK чата поддержки клиентов с SwiftUI и UIKit-мостом | Swift / SwiftUI |
+| [tgo-widget-flutter](repos/tgo-widget-flutter) | Кроссплатформенный виджет чата поддержки для iOS и Android | Dart / Flutter |
 | [tgo-widget-cli](repos/tgo-widget-cli) | CLI-инструмент и MCP-сервер для посетителей, предоставляющий интерфейс поддержки | TypeScript / Node.js |
 | [tgo-widget-miniprogram](repos/tgo-widget-miniprogram) | Компонент чата для мини-программ WeChat с потоковыми ответами ИИ и рендерингом Markdown | TypeScript |
 
