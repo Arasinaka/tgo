@@ -286,5 +286,7 @@ class ProcessManager:
 
 
 # Global instance
-process_manager = ProcessManager()
+from app.config import settings as _settings
+
+process_manager = ProcessManager(base_path=_settings.PLUGIN_BASE_PATH)
 

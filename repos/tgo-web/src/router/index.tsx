@@ -11,8 +11,8 @@ import Skills from '../components/ai/Skills';
 import { DeviceManagement } from '../components/ai/device-control';
 import WorkflowManagement from '../pages/WorkflowManagement';
 import WorkflowEditorPage from '../pages/WorkflowEditorPage';
-import LoginPage from '../pages/LoginPage';
-import RegisterPage from '../pages/RegisterPage';
+// @ts-ignore
+import { LoginPage, RegisterPage } from 'auth-pages';
 import SetupWizard from '../pages/SetupWizard';
 
 import { useTranslation } from 'react-i18next';

@@ -66,6 +66,12 @@ class Settings(BaseSettings):
         description="Secret key for JWT verification (must match tgo-api)",
     )
 
+    # Plugin Storage
+    PLUGIN_BASE_PATH: str = Field(
+        default="/var/lib/tgo/plugins",
+        description="Base directory for plugin storage",
+    )
+
     # Logging
     LOG_LEVEL: str = Field(default="INFO")
 

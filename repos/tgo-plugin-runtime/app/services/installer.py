@@ -358,5 +358,7 @@ class PluginInstaller:
 
 
 # Global instance
-installer = PluginInstaller()
+from app.config import settings as _settings
+
+installer = PluginInstaller(base_path=_settings.PLUGIN_BASE_PATH)
 

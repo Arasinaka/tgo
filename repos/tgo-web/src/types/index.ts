@@ -1457,6 +1457,7 @@ export interface AuthValidationErrors {
   email?: string;
   password?: string;
   passwordConfirmation?: string;
+  workspaceName?: string;
   general?: string;
 }
 
