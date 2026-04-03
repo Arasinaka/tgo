@@ -1,0 +1,34 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace/namespace.yaml
+  - secrets/app-secrets.yaml
+  - externals/postgres-secret.yaml
+  - externals/redis-secret.yaml
+  - externals/public-endpoints-configmap.yaml
+  - migrations/tgo-rag-job.yaml
+  - migrations/tgo-ai-job.yaml
+  - migrations/tgo-api-job.yaml
+  - apps/tgo-api/pvc.yaml
+  - apps/tgo-api/configmap.yaml
+  - apps/tgo-api/deployment.yaml
+  - apps/tgo-api/service.yaml
+  - apps/tgo-api/ingress.yaml
+  - apps/tgo-ai/pvc.yaml
+  - apps/tgo-ai/configmap.yaml
+  - apps/tgo-ai/deployment.yaml
+  - apps/tgo-ai/service.yaml
+  - apps/tgo-rag/pvc.yaml
+  - apps/tgo-rag/configmap.yaml
+  - apps/tgo-rag/deployment.yaml
+  - apps/tgo-rag/service.yaml
+  - apps/tgo-rag-worker/deployment.yaml
+  - apps/tgo-rag-beat/deployment.yaml
+  - apps/tgo-web/configmap.yaml
+  - apps/tgo-web/deployment.yaml
+  - apps/tgo-web/service.yaml
+  - apps/tgo-web/ingress.yaml
+  - apps/tgo-widget-js/configmap.yaml
+  - apps/tgo-widget-js/deployment.yaml
+  - apps/tgo-widget-js/service.yaml
+  - apps/tgo-widget-js/ingress.yaml

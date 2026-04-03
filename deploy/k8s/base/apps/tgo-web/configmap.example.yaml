@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tgo-web-config
+  namespace: tgo
+data:
+  VITE_API_BASE_URL: https://api.example.com
+  VITE_DEBUG_MODE: "false"
+  VITE_WIDGET_PREVIEW_URL: https://widget.example.com/
+  VITE_WIDGET_SCRIPT_BASE: https://widget.example.com/tgo-widget-sdk.js
+  VITE_WIDGET_DEMO_URL: https://widget.example.com/demo.html
+  VITE_DISABLE_WEBSOCKET_AUTO_CONNECT: "false"
+  VITE_STORE_API_URL: https://store.example.com/api/v1

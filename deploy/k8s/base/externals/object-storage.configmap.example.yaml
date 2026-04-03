@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tgo-object-storage-config
+  namespace: tgo
+data:
+  storage-type: minio
+  minio-url: http://minio.example.internal:9000
+  minio-upload-url: http://minio.example.internal:9000
+  minio-download-url: https://minio.example.com
+  minio-bucket-name: tgo
+  oss-endpoint: oss-cn-hangzhou.aliyuncs.com
+  oss-bucket-name: tgo
+  oss-bucket-url: https://tgo.oss-cn-hangzhou.aliyuncs.com

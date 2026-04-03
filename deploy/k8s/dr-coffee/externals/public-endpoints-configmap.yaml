@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tgo-public-endpoints
+  namespace: dr-coffee-test
+data:
+  api-base-url: https://tgo-api.dr-coffee.cn
+  web-base-url: https://tgo-admin.dr-coffee.cn
+  widget-base-url: https://tgo-widget.dr-coffee.cn
+  im-base-url: http://wkim-wukongim-local.wukongim.svc.cluster.local:5001

@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tgo-wukongim
+  namespace: tgo
+data:
+  api-url: http://wukongim.example.internal:5001
+  external-tcp-addr: im.example.com:5100
+  external-ws-url: ws://im.example.com:5200
+  external-wss-url: wss://im.example.com:5210

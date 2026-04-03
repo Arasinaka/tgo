@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tgo-rag-beat
+  namespace: dr-coffee-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tgo-rag-beat
+  template:
+    metadata:
+      labels:
+        app: tgo-rag-beat
+    spec:
+      imagePullSecrets:
+        - name: aliyun-registry-secret
+      containers:
+        - name: tgo-rag-beat
+          image: dr-acr-registry.cn-hangzhou.cr.aliyuncs.com/dr-coffee/tgo-rag:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - celery -A src.rag_service.tasks.celery_app beat --loglevel=info
+          envFrom:
+            - configMapRef:
+                name: tgo-rag-config
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: tgo-postgres
+                  key: database-url
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: tgo-redis
+                  key: url-db0
+            - name: QWEN3_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: tgo-app-secrets
+                  key: QWEN3_API_KEY
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

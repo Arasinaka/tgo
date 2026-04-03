@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tgo-widget-js-config
+  namespace: dr-coffee-test
+data:
+  VITE_API_BASE_URL: https://tgo-api.dr-coffee.cn

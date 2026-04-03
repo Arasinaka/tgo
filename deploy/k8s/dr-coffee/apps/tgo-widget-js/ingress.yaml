@@ -1,0 +1,17 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tgo-widget-js
+  namespace: dr-coffee-test
+spec:
+  rules:
+    - host: tgo-widget.dr-coffee.cn
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: tgo-widget-js
+                port:
+                  name: http

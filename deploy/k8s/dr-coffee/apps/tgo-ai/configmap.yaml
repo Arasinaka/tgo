@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tgo-ai-config
+  namespace: dr-coffee-test
+data:
+  API_SERVICE_URL: http://tgo-api:8000
+  RAG_SERVICE_URL: http://tgo-rag:8082
+  WORKFLOW_SERVICE_URL: http://tgo-workflow:8000
+  PLUGIN_RUNTIME_URL: http://tgo-plugin-runtime:8090
+  DEVICE_CONTROL_MCP_ENDPOINT: http://tgo-device-control:8085/mcp/{device_id}
+  SKILLS_BASE_DIR: /data/skills
+  STORE_SERVICE_URL: https://store.dr-coffee.cn
+  CORS_ORIGINS: '["https://tgo-admin.dr-coffee.cn","https://tgo-api.dr-coffee.cn"]'
+  ENVIRONMENT: production
+  LOG_LEVEL: INFO

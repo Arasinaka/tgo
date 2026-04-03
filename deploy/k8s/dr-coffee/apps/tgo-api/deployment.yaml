@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tgo-api
+  namespace: dr-coffee-test
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: tgo-api
+  template:
+    metadata:
+      labels:
+        app: tgo-api
+    spec:
+      imagePullSecrets:
+        - name: aliyun-registry-secret
+      containers:
+        - name: tgo-api
+          image: dr-acr-registry.cn-hangzhou.cr.aliyuncs.com/dr-coffee/tgo-api:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8000
+            - name: internal
+              containerPort: 8001
+          envFrom:
+            - configMapRef:
+                name: tgo-api-config
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: tgo-postgres
+                  key: database-url
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: tgo-redis
+                  key: url-db0
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: tgo-app-secrets
+                  key: SECRET_KEY
+            - name: WUKONGIM_SERVICE_URL
+              value: http://wkim-wukongim-local.wukongim.svc.cluster.local:5001
+          volumeMounts:
+            - name: uploads
+              mountPath: /app/uploads
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - curl -fsS http://127.0.0.1:8000/health && curl -fsS http://127.0.0.1:8001/health
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - curl -fsS http://127.0.0.1:8000/health && curl -fsS http://127.0.0.1:8001/health
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+      volumes:
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: tgo-api-uploads

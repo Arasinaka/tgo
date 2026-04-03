@@ -1,0 +1,28 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: tgo-platform-migrate
+spec:
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 86400
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: ghcr.io/tgoai/tgo/tgo-platform:REPLACE_TAG
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c", "alembic upgrade head"]
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: tgo-postgres
+                  key: database-url
+            - name: API_BASE_URL
+              value: http://tgo-api:8000
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: tgo-redis
+                  key: url-db0

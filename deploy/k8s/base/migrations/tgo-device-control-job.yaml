@@ -1,0 +1,32 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: tgo-device-control-migrate
+spec:
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 86400
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: ghcr.io/tgoai/tgo/tgo-device-control:REPLACE_TAG
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c", "alembic upgrade head"]
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: tgo-postgres
+                  key: database-url
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: tgo-redis
+                  key: url-db3
+            - name: SECRET_KEY
+              value: REPLACE_ME_API_SECRET_KEY
+            - name: API_SERVICE_URL
+              value: http://tgo-api:8000
+            - name: AI_SERVICE_URL
+              value: http://tgo-ai:8081

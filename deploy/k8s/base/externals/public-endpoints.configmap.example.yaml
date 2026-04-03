@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tgo-public-endpoints
+  namespace: tgo
+data:
+  api-base-url: https://api.example.com
+  web-base-url: https://admin.example.com
+  widget-base-url: https://widget.example.com

@@ -1,0 +1,17 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tgo-web
+  namespace: dr-coffee-test
+spec:
+  rules:
+    - host: tgo-admin.dr-coffee.cn
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: tgo-web
+                port:
+                  name: http

@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tgo-rag-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tgo-rag-worker
+  template:
+    metadata:
+      labels:
+        app: tgo-rag-worker
+    spec:
+      containers:
+        - name: tgo-rag-worker
+          image: ghcr.io/tgoai/tgo/tgo-rag:REPLACE_TAG
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - celery -A src.rag_service.tasks.celery_app worker --loglevel=info --hostname=worker@tgo-rag-worker -Q document_processing,embedding,website_crawling,qa_processing,celery
+          envFrom:
+            - configMapRef:
+                name: tgo-rag-config
+            - secretRef:
+                name: tgo-rag-secret
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: tgo-postgres
+                  key: database-url
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: tgo-redis
+                  key: url-db2
+          volumeMounts:
+            - name: uploads
+              mountPath: /app/uploads
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: "2"
+              memory: 4Gi
+      volumes:
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: tgo-rag-uploads

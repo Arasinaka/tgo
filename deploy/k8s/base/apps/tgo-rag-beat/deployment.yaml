@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tgo-rag-beat
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tgo-rag-beat
+  template:
+    metadata:
+      labels:
+        app: tgo-rag-beat
+    spec:
+      containers:
+        - name: tgo-rag-beat
+          image: ghcr.io/tgoai/tgo/tgo-rag:REPLACE_TAG
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - celery -A src.rag_service.tasks.celery_app beat --loglevel=info
+          envFrom:
+            - configMapRef:
+                name: tgo-rag-config
+            - secretRef:
+                name: tgo-rag-secret
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: tgo-postgres
+                  key: database-url
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: tgo-redis
+                  key: url-db2
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

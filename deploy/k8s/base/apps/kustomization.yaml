@@ -1,0 +1,22 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: tgo
+resources:
+  - ../namespace.yaml
+  - tgo-api/deployment.yaml
+  - tgo-api/service.yaml
+  - tgo-api/ingress.yaml
+  - tgo-ai/pvc.yaml
+  - tgo-ai/deployment.yaml
+  - tgo-ai/service.yaml
+  - tgo-rag/pvc.yaml
+  - tgo-rag/deployment.yaml
+  - tgo-rag/service.yaml
+  - tgo-rag-worker/deployment.yaml
+  - tgo-rag-beat/deployment.yaml
+  - tgo-web/deployment.yaml
+  - tgo-web/service.yaml
+  - tgo-web/ingress.yaml
+  - tgo-widget-js/deployment.yaml
+  - tgo-widget-js/service.yaml
+  - tgo-widget-js/ingress.yaml
