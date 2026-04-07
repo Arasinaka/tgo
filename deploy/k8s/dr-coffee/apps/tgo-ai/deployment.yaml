@@ -4,7 +4,7 @@ metadata:
   name: tgo-ai
   namespace: dr-coffee-test
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: tgo-ai

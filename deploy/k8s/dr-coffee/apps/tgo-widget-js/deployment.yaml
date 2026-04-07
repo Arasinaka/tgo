@@ -18,7 +18,18 @@ spec:
       containers:
         - name: tgo-widget-js
           image: dr-acr-registry.cn-hangzhou.cr.aliyuncs.com/dr-coffee/tgo-widget-js:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
+          command:
+            - /bin/sh
+            - -c
+          args:
+            - |
+              cat > /usr/share/nginx/html/env-config.js <<EOF
+              window.ENV = {
+                VITE_API_BASE_URL: '${VITE_API_BASE_URL}',
+              };
+              EOF
+              exec nginx -g "daemon off;"
           ports:
             - name: http
               containerPort: 80

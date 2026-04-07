@@ -18,7 +18,24 @@ spec:
       containers:
         - name: tgo-web
           image: dr-acr-registry.cn-hangzhou.cr.aliyuncs.com/dr-coffee/tgo-web:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
+          command:
+            - /bin/sh
+            - -c
+          args:
+            - |
+              cat > /usr/share/nginx/html/env-config.js <<EOF
+              window.ENV = {
+                VITE_API_BASE_URL: '${VITE_API_BASE_URL}',
+                VITE_DEBUG_MODE: ${VITE_DEBUG_MODE:-false},
+                VITE_WIDGET_PREVIEW_URL: '${VITE_WIDGET_PREVIEW_URL}',
+                VITE_WIDGET_SCRIPT_BASE: '${VITE_WIDGET_SCRIPT_BASE}',
+                VITE_WIDGET_DEMO_URL: '${VITE_WIDGET_DEMO_URL}',
+                VITE_DISABLE_WEBSOCKET_AUTO_CONNECT: '${VITE_DISABLE_WEBSOCKET_AUTO_CONNECT:-false}',
+                VITE_STORE_API_URL: '${VITE_STORE_API_URL}',
+              };
+              EOF
+              exec nginx -g "daemon off;"
           ports:
             - name: http
               containerPort: 80
