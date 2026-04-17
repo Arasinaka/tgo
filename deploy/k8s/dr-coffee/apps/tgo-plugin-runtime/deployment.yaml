@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: tgo-ai
+  name: tgo-plugin-runtime
   namespace: dr-coffee-test
 spec:
   replicas: 1
@@ -9,24 +9,24 @@ spec:
     type: Recreate
   selector:
     matchLabels:
-      app: tgo-ai
+      app: tgo-plugin-runtime
   template:
     metadata:
       labels:
-        app: tgo-ai
+        app: tgo-plugin-runtime
     spec:
       imagePullSecrets:
         - name: aliyun-registry-secret
       containers:
-        - name: tgo-ai
-          image: dr-acr-registry.cn-hangzhou.cr.aliyuncs.com/dr-coffee/tgo-ai:latest
+        - name: tgo-plugin-runtime
+          image: dr-acr-registry.cn-hangzhou.cr.aliyuncs.com/dr-coffee/tgo-plugin-runtime:latest
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
-              containerPort: 8081
+              containerPort: 8090
           envFrom:
             - configMapRef:
-                name: tgo-ai-config
+                name: tgo-plugin-runtime-config
           env:
             - name: DATABASE_URL
               valueFrom:
@@ -39,8 +39,10 @@ spec:
                   name: tgo-app-secrets
                   key: SECRET_KEY
           volumeMounts:
-            - name: skills
-              mountPath: /data/skills
+            - name: plugins
+              mountPath: /var/lib/tgo/plugins
+            - name: runtime-socket
+              mountPath: /var/run/tgo
           readinessProbe:
             httpGet:
               path: /health
@@ -61,6 +63,8 @@ spec:
               cpu: "1"
               memory: 1Gi
       volumes:
-        - name: skills
+        - name: plugins
           persistentVolumeClaim:
-            claimName: tgo-ai-skills
+            claimName: tgo-plugin-runtime-plugins
+        - name: runtime-socket
+          emptyDir: {}

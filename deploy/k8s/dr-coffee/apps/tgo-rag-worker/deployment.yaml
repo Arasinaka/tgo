@@ -5,6 +5,8 @@ metadata:
   namespace: dr-coffee-test
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: tgo-rag-worker
@@ -15,6 +17,23 @@ spec:
     spec:
       imagePullSecrets:
         - name: aliyun-registry-secret
+      securityContext:
+        fsGroup: 999
+        fsGroupChangePolicy: OnRootMismatch
+      initContainers:
+        - name: fix-uploads-permissions
+          image: dr-acr-registry.cn-hangzhou.cr.aliyuncs.com/dr-coffee/tgo-rag:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - chown -R 999:999 /app/uploads && chmod -R ug+rwX /app/uploads
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+          volumeMounts:
+            - name: uploads
+              mountPath: /app/uploads
       containers:
         - name: tgo-rag-worker
           image: dr-acr-registry.cn-hangzhou.cr.aliyuncs.com/dr-coffee/tgo-rag:latest

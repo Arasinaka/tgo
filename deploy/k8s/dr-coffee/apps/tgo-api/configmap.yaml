@@ -4,8 +4,8 @@ metadata:
   name: tgo-api-config
   namespace: dr-coffee-test
 data:
-  API_BASE_URL: https://tgo-api.dr-coffee.cn
-  BACKEND_CORS_ORIGINS: '["https://tgo-admin.dr-coffee.cn","https://tgo-widget.dr-coffee.cn","https://tgo-api.dr-coffee.cn"]'
+  API_BASE_URL: http://tgo-api.dr-coffee.cn
+  BACKEND_CORS_ORIGINS: '["http://tgo-admin.dr-coffee.cn","http://tgo-widget.dr-coffee.cn","http://tgo-api.dr-coffee.cn","https://tgo-admin.dr-coffee.cn","https://tgo-widget.dr-coffee.cn","https://tgo-api.dr-coffee.cn"]'
   INTERNAL_SERVICE_HOST: 0.0.0.0
   INTERNAL_SERVICE_PORT: "8001"
   AI_SERVICE_URL: http://tgo-ai:8081

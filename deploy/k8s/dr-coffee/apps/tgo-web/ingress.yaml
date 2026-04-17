@@ -3,7 +3,11 @@ kind: Ingress
 metadata:
   name: tgo-web
   namespace: dr-coffee-test
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
 spec:
+  ingressClassName: nginx
   rules:
     - host: tgo-admin.dr-coffee.cn
       http:
@@ -15,3 +19,7 @@ spec:
                 name: tgo-web
                 port:
                   name: http
+  tls:
+    - hosts:
+        - tgo-admin.dr-coffee.cn
+      secretName: tgo-admin-tls

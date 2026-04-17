@@ -5,6 +5,8 @@ metadata:
   namespace: dr-coffee-test
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: tgo-api
@@ -18,7 +20,7 @@ spec:
       containers:
         - name: tgo-api
           image: dr-acr-registry.cn-hangzhou.cr.aliyuncs.com/dr-coffee/tgo-api:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - name: http
               containerPort: 8000

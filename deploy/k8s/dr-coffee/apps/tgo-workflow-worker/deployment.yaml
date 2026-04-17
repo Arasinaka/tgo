@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tgo-workflow-worker
+  namespace: dr-coffee-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tgo-workflow-worker
+  template:
+    metadata:
+      labels:
+        app: tgo-workflow-worker
+    spec:
+      imagePullSecrets:
+        - name: aliyun-registry-secret
+      containers:
+        - name: tgo-workflow-worker
+          image: dr-acr-registry.cn-hangzhou.cr.aliyuncs.com/dr-coffee/tgo-workflow:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - celery -A celery_app.celery worker --loglevel=info --hostname=worker@tgo-workflow-worker -Q workflow
+          envFrom:
+            - configMapRef:
+                name: tgo-workflow-config
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: tgo-postgres
+                  key: database-url
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: tgo-redis
+                  key: url-db0
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi

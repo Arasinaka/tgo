@@ -1,25 +1,27 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: tgo-widget-js
-  namespace: dr-coffee-test
+  name: wkim-wukongim-ws
+  namespace: wukongim
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
 spec:
   ingressClassName: nginx
   rules:
-    - host: tgo-widget.dr-coffee.cn
+    - host: tgo-im.dr-coffee.cn
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: tgo-widget-js
+                name: wkim-wukongim-local
                 port:
-                  name: http
+                  number: 5200
   tls:
     - hosts:
-        - tgo-widget.dr-coffee.cn
-      secretName: tgo-widget-tls
+        - tgo-im.dr-coffee.cn
+      secretName: tgo-im-tls

@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tgo-workflow-config
+  namespace: dr-coffee-test
+data:
+  PROJECT_NAME: TGO Workflow Engine
+  ALLOWED_ORIGINS: '["https://tgo-admin.dr-coffee.cn","https://tgo-api.dr-coffee.cn"]'
+  AI_SERVICE_URL: http://tgo-ai:8081

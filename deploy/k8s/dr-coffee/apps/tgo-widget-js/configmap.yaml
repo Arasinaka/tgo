@@ -5,3 +5,4 @@ metadata:
   namespace: dr-coffee-test
 data:
   VITE_API_BASE_URL: https://tgo-api.dr-coffee.cn
+  VITE_PLATFORM_API_KEY: ak_live_dsSt5qc8cVDdwgZEkrNrcIs6X9fH6nf9

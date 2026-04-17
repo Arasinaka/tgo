@@ -6,9 +6,12 @@ resources:
   - externals/postgres-secret.yaml
   - externals/redis-secret.yaml
   - externals/public-endpoints-configmap.yaml
+  - wukongim-external/ingress.yaml
   - migrations/tgo-rag-job.yaml
   - migrations/tgo-ai-job.yaml
   - migrations/tgo-api-job.yaml
+  - migrations/tgo-plugin-runtime-job.yaml
+  - migrations/tgo-workflow-job.yaml
   - apps/tgo-api/pvc.yaml
   - apps/tgo-api/configmap.yaml
   - apps/tgo-api/deployment.yaml
@@ -24,6 +27,14 @@ resources:
   - apps/tgo-rag/service.yaml
   - apps/tgo-rag-worker/deployment.yaml
   - apps/tgo-rag-beat/deployment.yaml
+  - apps/tgo-plugin-runtime/pvc.yaml
+  - apps/tgo-plugin-runtime/configmap.yaml
+  - apps/tgo-plugin-runtime/deployment.yaml
+  - apps/tgo-plugin-runtime/service.yaml
+  - apps/tgo-workflow/configmap.yaml
+  - apps/tgo-workflow/deployment.yaml
+  - apps/tgo-workflow/service.yaml
+  - apps/tgo-workflow-worker/deployment.yaml
   - apps/tgo-web/configmap.yaml
   - apps/tgo-web/deployment.yaml
   - apps/tgo-web/service.yaml

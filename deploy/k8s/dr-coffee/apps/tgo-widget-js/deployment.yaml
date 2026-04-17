@@ -27,6 +27,7 @@ spec:
               cat > /usr/share/nginx/html/env-config.js <<EOF
               window.ENV = {
                 VITE_API_BASE_URL: '${VITE_API_BASE_URL}',
+                VITE_PLATFORM_API_KEY: '${VITE_PLATFORM_API_KEY}',
               };
               EOF
               exec nginx -g "daemon off;"
